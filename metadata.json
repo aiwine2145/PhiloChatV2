@@ -1,0 +1,5 @@
+{
+  "name": "PhiloChat (F)",
+  "description": "A chat application that allows users to converse with famous philosophers from history.",
+  "requestFramePermissions": []
+}
