@@ -1,8 +1,5 @@
-import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from '@google/genai';
 import { Philosopher, philosophers } from '../data/philosophers';
 import { Message } from '../types';
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const MAX_HISTORY_LENGTH = 10;
 
@@ -85,9 +82,6 @@ export const sendMessageToPhilosopherStream = async (
     // Determine the correct speaker tag
     let speakerTag = '[User]';
     if (m.sender === 'philosopher') {
-      // STRICT IDENTIFICATION: Use the message's own metadata to identify the speaker.
-      // Do NOT fallback to the current philosopher's name if metadata is missing,
-      // as this causes "persona confusion" in the model's context.
       const name = m.senderName || philosophers.find(p => p.id === m.philosopherId)?.name || 'Philosopher';
       speakerTag = `[${name}]`;
     }
@@ -105,62 +99,35 @@ export const sendMessageToPhilosopherStream = async (
     }
   });
 
-  // Ensure contents starts with a user message if possible
-  if (contents.length > 0 && contents[0].role !== 'user') {
-    // Gemini often prefers user-first, but we can let it be if history is long
-  }
-
   const systemInstruction = getSystemInstruction(philosopher, isGroupChat);
 
   try {
-    const responseStream = await ai.models.generateContentStream({
-      model: 'gemini-3-flash-preview',
-      contents,
-      config: {
-        systemInstruction,
-        temperature: 0.8,
-        topK: 64,
-        topP: 0.95,
-        safetySettings: [
-          {
-            category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-            threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
-          },
-          {
-            category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-            threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
-          },
-          {
-            category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-            threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
-          },
-          {
-            category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-            threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
-          },
-          {
-            category: HarmCategory.HARM_CATEGORY_CIVIC_INTEGRITY,
-            threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
-          },
-        ],
-      }
+    // Call Netlify Function instead of direct SDK
+    const response = await fetch('/.netlify/functions/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        philosopher,
+        contents,
+        isGroupChat,
+        systemInstruction
+      }),
     });
 
-    let fullText = '';
-    for await (const chunk of responseStream) {
-      if (chunk.text) {
-        fullText += chunk.text;
-        onChunk(fullText);
-      }
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to call Netlify function');
     }
 
-    // If stream finished but text is empty, it might have been blocked silently
-    if (!fullText.trim()) {
-      onChunk('*[系統提示：此發言因安全審查或內容過濾無法顯示]*');
-    }
+    const data = await response.json();
+    const reply = data.reply || '*[系統提示：此發言因安全審查或內容過濾無法顯示]*';
+    
+    // Since we're not streaming anymore, we just call onChunk once
+    onChunk(reply);
   } catch (error: any) {
-    console.error('Gemini Stream Error:', error);
+    console.error('Netlify Function Call Error:', error);
     onChunk('*[系統提示：此發言因 API 錯誤或連線中斷無法顯示]*');
-    throw error; // Re-throw to let the caller know
+    throw error;
   }
 };
+
