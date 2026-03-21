@@ -109,38 +109,25 @@ export const sendMessageToPhilosopherStream = async (
     }
   }
   
-  const contents: any[] = [];
-  
-  recentMessages.forEach(m => {
-    const role = m.sender === 'user' ? 'user' : 'model';
+  // 核心概念：放棄傳送陣列歷史，改為傳送單一 Prompt 字串 (Context Flattening)
+  const flatContext = recentMessages.map(m => {
     const cleanText = sanitizeMessageText(m.text);
-    
-    let speakerTag = '[User]';
+    let speakerTag = 'User';
     if (m.sender === 'philosopher') {
-      const name = m.senderName || philosophers.find(p => p.id === m.philosopherId)?.name || 'Philosopher';
-      speakerTag = `[${name}]`;
+      speakerTag = m.senderName || philosophers.find(p => p.id === m.philosopherId)?.name || 'Philosopher';
     }
-    
-    const text = isGroupChat ? `${speakerTag}: ${cleanText}` : cleanText;
-
-    if (contents.length > 0 && contents[contents.length - 1].role === role) {
-      contents[contents.length - 1].parts[0].text += `\n\n${text}`;
-    } else {
-      contents.push({
-        role,
-        parts: [{ text }]
-      });
-    }
-  });
-
-  // 第一項修復：強制追加『User 觸發句 (User Trigger)』
-  // 滿足 Gemini API『最後一個 role 必須是 user』的強制規定
-  contents.push({
-    role: "user",
-    parts: [{ text: `[系統排程]: 上一位已經發言完畢。現在請 ${philosopher.name} 針對上述對話發表看法。請直接給出你的回覆內容，不要包含括號標籤。` }]
-  });
+    return `[${speakerTag}]: ${cleanText}`;
+  }).join('\n\n');
 
   const systemInstruction = getSystemInstruction(philosopher, isGroupChat, memberNames, previousPhilosopherName);
+
+  // 將所有上下文包裝成唯一一個 user 角色的 contents
+  const contents = [{
+    role: "user",
+    parts: [{ 
+      text: `以下是群組聊天室目前的完整對話紀錄：\n\n${flatContext}\n\n[系統指令]：現在請你扮演 ${philosopher.name}，根據上述對話紀錄，直接給出你的回覆。請勿輸出 [名字] 標籤。` 
+    }]
+  }];
 
   // 第一項修復：放寬 『停止詞 (Stop Sequences)』，移除單獨的中括號攔截
   const stopSequences = ["(Waiting", "Waiting for", "\nUser:", "User:", "\n[User]"];
