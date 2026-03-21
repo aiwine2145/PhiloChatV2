@@ -109,7 +109,7 @@ export const sendMessageToPhilosopherStream = async (
     }
   }
   
-  // 核心概念：放棄傳送陣列歷史，改為傳送單一 Prompt 字串 (Context Flattening)
+  // 核心概念：極簡化 Payload (Naked Payload)
   const flatContext = recentMessages.map(m => {
     const cleanText = sanitizeMessageText(m.text);
     let speakerTag = 'User';
@@ -119,22 +119,23 @@ export const sendMessageToPhilosopherStream = async (
     return `[${speakerTag}]: ${cleanText}`;
   }).join('\n\n');
 
-  const systemInstruction = getSystemInstruction(philosopher, isGroupChat, memberNames, previousPhilosopherName);
+  // 建構唯一且絕對安全的 Prompt (Naked Payload)
+  const safePrompt = `
+【系統指令】
+你現在是 ${philosopher.name}。請完全沉浸於角色。
+
+【當前群組歷史對話】
+${flatContext}
+
+【你的任務】
+請根據上述對話紀錄，發表你的哲學觀點或反駁。請直接輸出你的回覆，絕對不要在開頭加上括號或你的名字。
+`;
 
   // 將所有上下文包裝成唯一一個 user 角色的 contents
   const contents = [{
     role: "user",
-    parts: [{ 
-      text: `以下是群組聊天室目前的完整對話紀錄：\n\n${flatContext}\n\n[系統指令]：現在請你扮演 ${philosopher.name}，根據上述對話紀錄，直接給出你的回覆。請勿輸出 [名字] 標籤。` 
-    }]
+    parts: [{ text: safePrompt }]
   }];
-
-  // 第一項修復：放寬 『停止詞 (Stop Sequences)』，移除單獨的中括號攔截
-  const stopSequences = ["(Waiting", "Waiting for", "\nUser:", "User:", "\n[User]"];
-  if (nextPhilosopherName) {
-    stopSequences.push(`\n${nextPhilosopherName}:`);
-    stopSequences.push(` [${nextPhilosopherName}]:`);
-  }
 
   try {
     const response = await fetch('/.netlify/functions/chat', {
@@ -143,9 +144,7 @@ export const sendMessageToPhilosopherStream = async (
       body: JSON.stringify({
         philosopher,
         contents,
-        isGroupChat,
-        systemInstruction,
-        stopSequences
+        isGroupChat
       }),
     });
 

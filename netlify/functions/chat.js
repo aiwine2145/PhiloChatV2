@@ -7,7 +7,7 @@ export const handler = async (event) => {
   }
 
   try {
-    const { philosopher, contents, isGroupChat, systemInstruction, stopSequences: customStopSequences } = JSON.parse(event.body);
+    const { philosopher, contents, isGroupChat } = JSON.parse(event.body);
 
     if (!process.env.GEMINI_API_KEY) {
       return {
@@ -18,15 +18,15 @@ export const handler = async (event) => {
 
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
+    // 第一項：極簡 Payload 重構 (Naked Payload)
+    // 徹底移除 stopSequences 與額外 config，防止 400 錯誤
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents,
       config: {
-        systemInstruction,
         temperature: 0.8,
         topK: 64,
         topP: 0.95,
-        stopSequences: customStopSequences || ["(Waiting", "Waiting for"],
         safetySettings: [
           {
             category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
