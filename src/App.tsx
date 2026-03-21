@@ -171,6 +171,8 @@ export default function App() {
 
         let accumulatedText = '';
         try {
+          const memberNames = selectedGroup.memberIds.map(id => philosophers.find(p => p.id === id)?.name || '');
+          
           // 規則一：使用 await 確保序列執行，嚴禁 Promise.all
           await sendMessageToPhilosopherStream(currentPhilosopher, currentHistory, (chunkText) => {
             accumulatedText = chunkText;
@@ -183,7 +185,7 @@ export default function App() {
                 )
               };
             });
-          }, true);
+          }, true, memberNames);
 
           // 哲學家發言結束，更新本地歷史紀錄副本供下一位使用
           const finalPhiloMsg: Message = {

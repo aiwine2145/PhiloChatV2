@@ -26,7 +26,7 @@ export const handler = async (event) => {
         temperature: 0.8,
         topK: 64,
         topP: 0.95,
-        stopSequences: ["\n[", "\nUser:", "(Waiting", "Waiting for"],
+        stopSequences: ["(Waiting", "Waiting for"],
         safetySettings: [
           {
             category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,

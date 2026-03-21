@@ -3,13 +3,16 @@ import { Message } from '../types';
 
 const MAX_HISTORY_LENGTH = 10;
 
-export const getSystemInstruction = (philosopher: Philosopher, isGroupChat: boolean = false) => {
+export const getSystemInstruction = (philosopher: Philosopher, isGroupChat: boolean = false, memberNames: string[] = []) => {
   let base = `
 You are the great historical philosopher: ${philosopher.name}. You are currently using a Telegram-like instant messaging app to chat with modern people.
 Please immerse yourself completely in this role and strictly follow these conversation rules:
 
 【Anti-Hallucination Warning (Extremely Important)】
-You are and ONLY are ${philosopher.name}. Your output must absolutely NOT contain any name tags of other philosophers (e.g., [Kant]: or [Descartes]:). You can only publish your own single reply from a first-person perspective. Stop generating immediately after speaking, and never write lines for others.
+You are and ONLY are ${philosopher.name}. 
+Your output MUST NOT contain any name tags or prefixes (e.g., DO NOT start with [${philosopher.name}]: or ${philosopher.name}:). 
+Just start speaking directly in the first person. 
+Stop generating immediately after your own speech. Never write lines for others.
 
 【Flash Exclusive Deep Thinking Framework (Extremely Important)】
 
@@ -33,6 +36,7 @@ Implicit Concept Deconstruction: Before answering, you must first see through th
 `;
 
   if (isGroupChat) {
+    const roster = memberNames.join(', ');
     base += `
 【Free Salon Interaction Rules (Extremely Important)】You are now in a group salon where multiple philosophers coexist. Please look at the entire conversation history. You have absolute freedom to decide who you want to speak to, and you don't need to force a response to the previous speaker:
 
@@ -42,9 +46,11 @@ Implicit Concept Deconstruction: Before answering, you must first see through th
 
 3. Fusion Speech: You can half answer the user's question and half mock or agree with a philosopher who just spoke.
 
-Please decide your most natural speaking strategy and attack target in this group completely according to the arrogant, restrained or argumentative true personality of ${philosopher.name}.
+【Current Group Roster】
+The only members in this chat room are: ${roster}.
+You MUST NOT mention or attempt to respond to any philosopher NOT on this list (e.g., if Nietzsche or Kant are not on the list, treat them as non-existent). You can only interact with people on this list or [User].
 
-Your answer must start with [${philosopher.name}]:.
+DO NOT include your name tag [${philosopher.name}]: in your output. Just start your speech.
 `;
   }
 
@@ -70,7 +76,8 @@ export const sendMessageToPhilosopherStream = async (
   philosopher: Philosopher,
   messages: Message[],
   onChunk: (text: string) => void,
-  isGroupChat: boolean = false
+  isGroupChat: boolean = false,
+  memberNames: string[] = []
 ): Promise<void> => {
   // 規則二：嚴格過濾系統字串與無效訊息
   const validMessages = messages.filter(m => 
@@ -112,7 +119,7 @@ export const sendMessageToPhilosopherStream = async (
     }
   });
 
-  const systemInstruction = getSystemInstruction(philosopher, isGroupChat);
+  const systemInstruction = getSystemInstruction(philosopher, isGroupChat, memberNames);
 
   try {
     const response = await fetch('/.netlify/functions/chat', {
@@ -139,7 +146,13 @@ export const sendMessageToPhilosopherStream = async (
 
     const reply = data.reply || '*[System Hint: This message cannot be displayed due to safety review or content filtering]*';
     
-    onChunk(sanitizeMessageText(reply));
+    // Clean the reply from AI (it shouldn't have tags, but just in case)
+    const cleanReply = sanitizeMessageText(reply);
+    
+    // Manually prepend the tag for UI and history consistency
+    const taggedReply = isGroupChat ? `[${philosopher.name}]: ${cleanReply}` : cleanReply;
+    
+    onChunk(taggedReply);
   } catch (error: any) {
     console.error('Netlify Function Call Error:', error);
     // If it's a rate limit error that wasn't caught by status code (unlikely but safe)
