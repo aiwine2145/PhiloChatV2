@@ -74,7 +74,11 @@ export const handler = async (event) => {
       body: JSON.stringify({ reply }),
     };
   } catch (error) {
-    console.error('Netlify Function Error:', error);
+    // 第三項：列印真實錯誤 (Console Logging)
+    console.error("API Error (Full Details):", error);
+    if (error.response) {
+      console.error("API Response Data:", JSON.stringify(error.response.data, null, 2));
+    }
     
     // Check for Rate Limit (429)
     if (error.message?.includes('429') || error.message?.toLowerCase().includes('rate limit')) {

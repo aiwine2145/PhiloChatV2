@@ -133,6 +133,13 @@ export const sendMessageToPhilosopherStream = async (
     }
   });
 
+  // 第一項修復：強制追加『User 觸發句 (User Trigger)』
+  // 滿足 Gemini API『最後一個 role 必須是 user』的強制規定
+  contents.push({
+    role: "user",
+    parts: [{ text: `[系統排程]: 上一位已經發言完畢。現在請 ${philosopher.name} 針對上述對話發表看法。請直接給出你的回覆內容，不要包含括號標籤。` }]
+  });
+
   const systemInstruction = getSystemInstruction(philosopher, isGroupChat, memberNames, previousPhilosopherName);
 
   // 第一項修復：放寬 『停止詞 (Stop Sequences)』，移除單獨的中括號攔截
