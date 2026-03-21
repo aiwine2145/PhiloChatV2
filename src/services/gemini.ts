@@ -3,7 +3,12 @@ import { Message } from '../types';
 
 const MAX_HISTORY_LENGTH = 10;
 
-export const getSystemInstruction = (philosopher: Philosopher, isGroupChat: boolean = false, memberNames: string[] = []) => {
+export const getSystemInstruction = (
+  philosopher: Philosopher, 
+  isGroupChat: boolean = false, 
+  memberNames: string[] = [],
+  previousPhilosopherName?: string
+) => {
   let base = `
 You are the great historical philosopher: ${philosopher.name}. You are currently using a Telegram-like instant messaging app to chat with modern people.
 Please immerse yourself completely in this role and strictly follow these conversation rules:
@@ -38,13 +43,13 @@ Implicit Concept Deconstruction: Before answering, you must first see through th
   if (isGroupChat) {
     const roster = memberNames.join(', ');
     base += `
-【Free Salon Interaction Rules (Extremely Important)】You are now in a group salon where multiple philosophers coexist. Please look at the entire conversation history. You have absolute freedom to decide who you want to speak to, and you don't need to force a response to the previous speaker:
+【自由沙龍互動法則 - 修正案 (極度重要)】
 
-1. Express Independent Insights: If you have strong personal insights into the question originally raised by [User], you can choose to ignore other philosophers and directly express your core philosophical views to [User].
+1. 僅此一家： 你是而且只能是 ${philosopher.name}。你的輸出嚴禁包含任何其他成員的名字標籤（如 [Laozi]:, [Confucius]:）。你絕對不可以代入任何其他人說話。
 
-2. Cross-order Fire / Random Refutation: Carefully examine the speech of any other philosopher in the history. If anyone's point of view seriously conflicts with your theory (e.g., Nietzsche seeing Kant, or Aristotle seeing Plato), please call him out directly in your speech (e.g., "Descartes, what you just said is simply absurd...") and conduct a fierce refutation.
+2. 不可預知： 對話紀錄中尚未出現的內容（例如其他哲學家的觀點），對你來說是未知的。你絕對禁止針對未來的、預測的、或腦補的其他成員觀點進行回應（即使你知道他們在群組裡）。你只能針對歷史紀錄中已存在的文字（[User] 或 [其他成員] 的已發言內容）進行辯論。
 
-3. Fusion Speech: You can half answer the user's question and half mock or agree with a philosopher who just spoke.
+3. 說完就停： 發表完你的一個觀點後，請立刻停止所有文字輸出。絕對禁止撰寫任何關於 UI 佔位符或系統提示的文字。
 
 【Current Group Roster】
 The only members in this chat room are: ${roster}.
@@ -52,6 +57,13 @@ You MUST NOT mention or attempt to respond to any philosopher NOT on this list (
 
 DO NOT include your name tag [${philosopher.name}]: in your output. Just start your speech.
 `;
+
+    if (previousPhilosopherName) {
+      base += `
+【Parrot 防護指令】
+你現在必須對 ${previousPhilosopherName} 剛才的發言發表一個新的視角，絕對禁止重複或改寫最初 [User] 的提問。
+`;
+    }
   }
 
   return base;
@@ -77,7 +89,9 @@ export const sendMessageToPhilosopherStream = async (
   messages: Message[],
   onChunk: (text: string) => void,
   isGroupChat: boolean = false,
-  memberNames: string[] = []
+  memberNames: string[] = [],
+  nextPhilosopherName?: string,
+  previousPhilosopherName?: string
 ): Promise<void> => {
   // 規則二：嚴格過濾系統字串與無效訊息
   const validMessages = messages.filter(m => 
@@ -119,7 +133,14 @@ export const sendMessageToPhilosopherStream = async (
     }
   });
 
-  const systemInstruction = getSystemInstruction(philosopher, isGroupChat, memberNames);
+  const systemInstruction = getSystemInstruction(philosopher, isGroupChat, memberNames, previousPhilosopherName);
+
+  // 第一項修復：強化『停止詞 (Stop Sequences)』
+  const stopSequences = ["(Waiting", "Waiting for", "\n[", " ["];
+  if (nextPhilosopherName) {
+    stopSequences.push(`\n${nextPhilosopherName}:`);
+    stopSequences.push(` [${nextPhilosopherName}]:`);
+  }
 
   try {
     const response = await fetch('/.netlify/functions/chat', {
@@ -129,7 +150,8 @@ export const sendMessageToPhilosopherStream = async (
         philosopher,
         contents,
         isGroupChat,
-        systemInstruction
+        systemInstruction,
+        stopSequences
       }),
     });
 

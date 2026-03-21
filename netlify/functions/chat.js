@@ -7,7 +7,7 @@ export const handler = async (event) => {
   }
 
   try {
-    const { philosopher, contents, isGroupChat, systemInstruction } = JSON.parse(event.body);
+    const { philosopher, contents, isGroupChat, systemInstruction, stopSequences: customStopSequences } = JSON.parse(event.body);
 
     if (!process.env.GEMINI_API_KEY) {
       return {
@@ -26,7 +26,7 @@ export const handler = async (event) => {
         temperature: 0.8,
         topK: 64,
         topP: 0.95,
-        stopSequences: ["(Waiting", "Waiting for"],
+        stopSequences: customStopSequences || ["(Waiting", "Waiting for"],
         safetySettings: [
           {
             category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,

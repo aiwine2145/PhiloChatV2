@@ -173,19 +173,35 @@ export default function App() {
         try {
           const memberNames = selectedGroup.memberIds.map(id => philosophers.find(p => p.id === id)?.name || '');
           
+          // 獲取佇列中的下一位與上一位哲學家名稱，用於停止詞與 Parrot 防護
+          const currentIndex = speakerQueue.indexOf(philoId);
+          const nextPhiloId = speakerQueue[currentIndex + 1];
+          const nextPhilosopherName = nextPhiloId ? philosophers.find(p => p.id === nextPhiloId)?.name : undefined;
+          
+          const prevPhiloId = currentIndex > 0 ? speakerQueue[currentIndex - 1] : undefined;
+          const previousPhilosopherName = prevPhiloId ? philosophers.find(p => p.id === prevPhiloId)?.name : undefined;
+
           // 規則一：使用 await 確保序列執行，嚴禁 Promise.all
-          await sendMessageToPhilosopherStream(currentPhilosopher, currentHistory, (chunkText) => {
-            accumulatedText = chunkText;
-            setChatHistory(prev => {
-              const messages = prev[selectedPhilosopherId] || [];
-              return {
-                ...prev,
-                [selectedPhilosopherId]: messages.map(msg => 
-                  msg.id === philosopherMessageId ? { ...msg, text: chunkText } : msg
-                )
-              };
-            });
-          }, true, memberNames);
+          await sendMessageToPhilosopherStream(
+            currentPhilosopher, 
+            currentHistory, 
+            (chunkText) => {
+              accumulatedText = chunkText;
+              setChatHistory(prev => {
+                const messages = prev[selectedPhilosopherId] || [];
+                return {
+                  ...prev,
+                  [selectedPhilosopherId]: messages.map(msg => 
+                    msg.id === philosopherMessageId ? { ...msg, text: chunkText } : msg
+                  )
+                };
+              });
+            }, 
+            true, 
+            memberNames,
+            nextPhilosopherName,
+            previousPhilosopherName
+          );
 
           // 哲學家發言結束，更新本地歷史紀錄副本供下一位使用
           const finalPhiloMsg: Message = {
