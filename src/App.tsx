@@ -208,6 +208,10 @@ export default function App() {
             };
           });
         }
+
+        // 第一項：加入 API 請求的延遲節流閥 (1.5s - 2s)
+        // 避免連續呼叫觸發 Gemini API 的 Rate Limit
+        await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 500));
       }
       
       setIsTyping(false);

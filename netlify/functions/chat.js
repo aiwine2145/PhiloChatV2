@@ -3,11 +3,7 @@ import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from '@google/genai';
 export const handler = async (event) => {
   // Only allow POST
   if (event.httpMethod !== 'POST') {
-    return { 
-      statusCode: 405, 
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Method Not Allowed' }) 
-    };
+    return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
   try {
@@ -30,6 +26,7 @@ export const handler = async (event) => {
         temperature: 0.8,
         topK: 64,
         topP: 0.95,
+        stopSequences: ["\n[", "\nUser:", "(Waiting", "Waiting for"],
         safetySettings: [
           {
             category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
@@ -55,7 +52,21 @@ export const handler = async (event) => {
       }
     });
 
-    const reply = response.text || '*[系統提示：此發言因安全審查或內容過濾無法顯示]*';
+    const candidate = response.candidates?.[0];
+    const finishReason = candidate?.finishReason;
+
+    if (finishReason === 'SAFETY') {
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          reply: '*[System Hint: This message cannot be displayed due to safety review or content filtering]*',
+          isSafetyError: true 
+        }),
+      };
+    }
+
+    const reply = response.text || '*[System Hint: This message cannot be displayed due to unexpected reasons]*';
 
     return {
       statusCode: 200,
@@ -64,11 +75,23 @@ export const handler = async (event) => {
     };
   } catch (error) {
     console.error('Netlify Function Error:', error);
-    const errorMessage = error instanceof Error ? error.message : String(error);
+    
+    // Check for Rate Limit (429)
+    if (error.message?.includes('429') || error.message?.toLowerCase().includes('rate limit')) {
+      return {
+        statusCode: 429,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          error: 'Rate Limit Exceeded', 
+          reply: '[System Hint: API requests are too frequent, the philosopher is deep in thought...]' 
+        }),
+      };
+    }
+
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Failed to generate content', details: errorMessage }),
+      body: JSON.stringify({ error: 'Failed to generate content', details: error.message }),
     };
   }
 };

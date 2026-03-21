@@ -53,12 +53,17 @@ Your answer must start with [${philosopher.name}]:.
 
 /**
  * Strips all speaker tags from the beginning of a message.
- * Handles multiple tags and variations in whitespace.
+ * Also removes hallucinated UI system text.
  */
 export const sanitizeMessageText = (text: string): string => {
-  // Regex to match one or more [Name]: patterns at the start of the string
-  // Supports various characters inside brackets and optional whitespace
-  return text.replace(/^(\s*\[[^\]]+\]:\s*)+/g, '').trim();
+  // 1. Strip speaker tags [Name]:
+  let clean = text.replace(/^(\s*\[[^\]]+\]:\s*)+/g, '').trim();
+  
+  // 2. Strip hallucinated UI text like (Waiting for your reply...)
+  clean = clean.replace(/\(Waiting for your (reply|input|response)\.\.\.\)/gi, '');
+  clean = clean.replace(/\(Waiting\.\.\.\)/gi, '');
+  
+  return clean.trim();
 };
 
 export const sendMessageToPhilosopherStream = async (
@@ -121,18 +126,28 @@ export const sendMessageToPhilosopherStream = async (
       }),
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to call Netlify function');
+      // Handle 429 specifically if returned from function
+      if (response.status === 429) {
+        onChunk(data.reply || '[System Hint: API requests are too frequent, the philosopher is deep in thought...]');
+        return;
+      }
+      throw new Error(data.error || 'Failed to call Netlify function');
     }
 
-    const data = await response.json();
     const reply = data.reply || '*[System Hint: This message cannot be displayed due to safety review or content filtering]*';
     
-    onChunk(reply);
+    onChunk(sanitizeMessageText(reply));
   } catch (error: any) {
     console.error('Netlify Function Call Error:', error);
-    onChunk('*[System Hint: This message cannot be displayed due to API error or connection interruption]*');
+    // If it's a rate limit error that wasn't caught by status code (unlikely but safe)
+    if (error.message?.includes('429') || error.message?.toLowerCase().includes('rate limit')) {
+      onChunk('[System Hint: API requests are too frequent, the philosopher is deep in thought...]');
+    } else {
+      onChunk('*[System Hint: This message cannot be displayed due to API error or connection interruption]*');
+    }
     throw error;
   }
 };

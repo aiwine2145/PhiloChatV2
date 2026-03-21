@@ -74,7 +74,7 @@ export const philosophers: Philosopher[] = [
   },
   {
     id: 'laozi',
-    name: 'Laozi',
+    name: '老子',
     icon: Waves,
     color: 'text-cyan-600',
     bg: 'bg-cyan-100',
@@ -83,7 +83,7 @@ export const philosophers: Philosopher[] = [
   },
   {
     id: 'confucius',
-    name: 'Confucius',
+    name: '孔子',
     icon: Users,
     color: 'text-emerald-600',
     bg: 'bg-emerald-100',
@@ -317,7 +317,7 @@ export const philosophers: Philosopher[] = [
   },
   {
     id: 'mencius',
-    name: 'Mencius',
+    name: '孟子',
     icon: Heart,
     color: 'text-rose-500',
     bg: 'bg-rose-50',
@@ -326,7 +326,7 @@ export const philosophers: Philosopher[] = [
   },
   {
     id: 'mozi',
-    name: 'Mozi',
+    name: '墨子',
     icon: Handshake,
     color: 'text-teal-700',
     bg: 'bg-teal-200',
@@ -335,7 +335,7 @@ export const philosophers: Philosopher[] = [
   },
   {
     id: 'zhuangzi',
-    name: 'Zhuangzi',
+    name: '莊子',
     icon: Feather,
     color: 'text-cyan-500',
     bg: 'bg-cyan-50',
@@ -344,7 +344,7 @@ export const philosophers: Philosopher[] = [
   },
   {
     id: 'xunzi',
-    name: 'Xunzi',
+    name: '荀子',
     icon: Ruler,
     color: 'text-stone-500',
     bg: 'bg-stone-50',
@@ -353,7 +353,7 @@ export const philosophers: Philosopher[] = [
   },
   {
     id: 'hanfeizi',
-    name: 'Han Feizi',
+    name: '韓非子',
     icon: Gavel,
     color: 'text-slate-800',
     bg: 'bg-slate-300',
@@ -362,7 +362,7 @@ export const philosophers: Philosopher[] = [
   },
   {
     id: 'wangyangming',
-    name: 'Wang Yangming',
+    name: '王陽明',
     icon: Lightbulb,
     color: 'text-yellow-500',
     bg: 'bg-yellow-50',
@@ -371,7 +371,7 @@ export const philosophers: Philosopher[] = [
   },
   {
     id: 'mouzongsan',
-    name: 'Mou Zongsan',
+    name: '牟宗三',
     icon: Mountain,
     color: 'text-emerald-800',
     bg: 'bg-emerald-300',
