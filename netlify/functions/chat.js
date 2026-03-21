@@ -3,7 +3,11 @@ import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from '@google/genai';
 export const handler = async (event) => {
   // Only allow POST
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' };
+    return { 
+      statusCode: 405, 
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: 'Method Not Allowed' }) 
+    };
   }
 
   try {
@@ -60,10 +64,11 @@ export const handler = async (event) => {
     };
   } catch (error) {
     console.error('Netlify Function Error:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Failed to generate content', details: error.message }),
+      body: JSON.stringify({ error: 'Failed to generate content', details: errorMessage }),
     };
   }
 };

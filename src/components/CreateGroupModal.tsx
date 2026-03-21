@@ -33,7 +33,7 @@ export default function CreateGroupModal({ philosophers, onClose, onCreate }: Cr
         <div className="px-6 py-4 border-b border-slate-700 flex items-center justify-between bg-slate-800/50">
           <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
             <Users className="w-5 h-5 text-indigo-400" />
-            建立新群組
+            Create New Group
           </h2>
           <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
             <X className="w-5 h-5" />
@@ -42,22 +42,22 @@ export default function CreateGroupModal({ philosophers, onClose, onCreate }: Cr
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">群組名稱</label>
+            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Group Name</label>
             <input
               autoFocus
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="例如：雅典學院、理性批判小組..."
+              placeholder="e.g., School of Athens, Critique of Reason..."
               className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
             />
           </div>
 
           <div className="space-y-3">
             <div className="flex justify-between items-end">
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">選擇成員 (2-5 位)</label>
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Select Members (2-5)</label>
               <span className={`text-[10px] font-bold ${selectedMembers.length > 5 ? 'text-red-400' : 'text-indigo-400'}`}>
-                已選擇: {selectedMembers.length} / 5
+                Selected: {selectedMembers.length} / 5
               </span>
             </div>
             <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
@@ -96,7 +96,7 @@ export default function CreateGroupModal({ philosophers, onClose, onCreate }: Cr
                   : 'bg-slate-700 text-slate-500 cursor-not-allowed'
               }`}
             >
-              建立群組
+              Create Group
             </button>
           </div>
         </form>

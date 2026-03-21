@@ -66,7 +66,7 @@ export default function App() {
     ? { 
         id: selectedGroup.id, 
         name: selectedGroup.name, 
-        shortDescription: `${selectedGroup.memberIds.length} 位哲學家在此對話`, 
+        shortDescription: `${selectedGroup.memberIds.length} philosophers in this chat`, 
         icon: philosophers[0].icon, 
         bg: 'bg-indigo-900', 
         color: 'text-white', 
@@ -116,7 +116,7 @@ export default function App() {
     
     let finalMessageText = text;
     if (replyingToMessage) {
-      finalMessageText = `[引用過往訊息]：「${replyingToMessage.text}」\n\n[我的新回覆]：${text}`;
+      finalMessageText = `[Quoted Message]: "${replyingToMessage.text}"\n\n[My Reply]: ${text}`;
     }
 
     const userMessage: Message = {
@@ -136,26 +136,24 @@ export default function App() {
     setReplyingToMessage(null);
 
     if (isGroupChat && selectedGroup) {
-      // 第一步：決定『初始發言名單 (Speaker Queue)』
+      // 規則一：嚴格執行『強制同步列隊 (Synchronous Queue)』
       let speakerQueue = [...selectedGroupPhilosophers];
       
       if (speakerQueue.length === 0) {
-        // 如果沒有任何點名：從當前群組的 members 名單中，隨機挑選 1位
         const randomId = selectedGroup.memberIds[Math.floor(Math.random() * selectedGroup.memberIds.length)];
         speakerQueue = [randomId];
       }
 
-      // 第二步：嚴格的『接力賽』串流處理 (Strict Sequential Processing)
-      // 使用 for...of 迴圈搭配 await，確保 B 能看到 A 的發言
+      // 初始化歷史紀錄副本，確保 A 的發言能被 B 看見
       let currentHistory = [...(chatHistory[selectedPhilosopherId] || []), userMessage];
 
       for (const philoId of speakerQueue) {
-        // 每次迴圈開始前，currentHistory 已經包含了上一位哲學家的完整發言
         const currentPhilosopher = philosophers.find(p => p.id === philoId);
         if (!currentPhilosopher) continue;
 
         const philosopherMessageId = `${Date.now()}-${philoId}`;
         
+        // 先插入一個空的串流佔位訊息
         const initialPhilosopherMessage: Message = {
           id: philosopherMessageId,
           sender: 'philosopher',
@@ -173,21 +171,21 @@ export default function App() {
 
         let accumulatedText = '';
         try {
+          // 規則一：使用 await 確保序列執行，嚴禁 Promise.all
           await sendMessageToPhilosopherStream(currentPhilosopher, currentHistory, (chunkText) => {
             accumulatedText = chunkText;
             setChatHistory(prev => {
               const messages = prev[selectedPhilosopherId] || [];
-              const updatedMessages = messages.map(msg => 
-                msg.id === philosopherMessageId ? { ...msg, text: chunkText } : msg
-              );
               return {
                 ...prev,
-                [selectedPhilosopherId]: updatedMessages
+                [selectedPhilosopherId]: messages.map(msg => 
+                  msg.id === philosopherMessageId ? { ...msg, text: chunkText } : msg
+                )
               };
             });
           }, true);
 
-          // 當哲學家 A 串流發言完畢後，將 A 的完整發言正式存入 local 歷史副本，供下一位哲學家 B 使用
+          // 哲學家發言結束，更新本地歷史紀錄副本供下一位使用
           const finalPhiloMsg: Message = {
             ...initialPhilosopherMessage,
             text: accumulatedText,
@@ -197,25 +195,20 @@ export default function App() {
 
         } catch (error: any) {
           console.error(`Failed to send message to ${currentPhilosopher.name}:`, error);
-          // Ensure we have some text even on error if gemini.ts didn't provide it
-          if (!accumulatedText) {
-            accumulatedText = '*[系統提示：此發言因 API 錯誤或連線中斷無法顯示]*';
-          }
+          accumulatedText = accumulatedText || '*[System Hint: This message cannot be displayed due to API error or connection interruption]*';
         } finally {
+          // 確保狀態更新為非串流模式
           setChatHistory(prev => {
             const messages = prev[selectedPhilosopherId] || [];
             return {
               ...prev,
               [selectedPhilosopherId]: messages.map(msg => 
-                msg.id === philosopherMessageId ? { ...msg, isStreaming: false, text: accumulatedText || msg.text || '*[系統提示：此發言因非預期原因無法顯示]*' } : msg
+                msg.id === philosopherMessageId ? { ...msg, isStreaming: false, text: accumulatedText } : msg
               )
             };
           });
         }
       }
-
-      // 第四步：保留自動反駁機制的次數限制 (Auto-Rebuttal Turn Limit)
-      // 目前僅處理 speakerQueue。若未來增加「自動跳出反駁」邏輯，則在該邏輯中套用「連續發言不得超過 2 次」限制。
       
       setIsTyping(false);
     } else {
@@ -254,7 +247,7 @@ export default function App() {
       } catch (error: any) {
         console.error("Failed to send message:", error);
         if (!accumulatedText) {
-          accumulatedText = '*[系統提示：此發言因 API 錯誤或連線中斷無法顯示]*';
+          accumulatedText = '*[System Hint: This message cannot be displayed due to API error or connection interruption]*';
         }
       } finally {
         setChatHistory(prev => {
@@ -262,7 +255,7 @@ export default function App() {
           return {
             ...prev,
             [selectedPhilosopherId]: messages.map(msg => 
-              msg.id === philosopherMessageId ? { ...msg, isStreaming: false, text: accumulatedText || msg.text || '*[系統提示：此發言因非預期原因無法顯示]*' } : msg
+              msg.id === philosopherMessageId ? { ...msg, isStreaming: false, text: accumulatedText || msg.text || '*[System Hint: This message cannot be displayed due to unexpected reasons]*' } : msg
             )
           };
         });

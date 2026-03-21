@@ -196,7 +196,7 @@ export default function Sidebar({ philosophers, groups, selectedId, onSelect, ch
             }`}
           >
             <User className="w-3.5 h-3.5" />
-            單人私訊
+            Direct Messages
           </button>
           <button
             onClick={() => setActiveTab('group')}
@@ -205,14 +205,14 @@ export default function Sidebar({ philosophers, groups, selectedId, onSelect, ch
             }`}
           >
             <Users className="w-3.5 h-3.5" />
-            多人群組
+            Group Chats
           </button>
         </div>
         <div className="relative">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input 
             type="text" 
-            placeholder={activeTab === 'single' ? "搜尋哲學家..." : "搜尋群組..."}
+            placeholder={activeTab === 'single' ? "Search philosophers..." : "Search groups..."}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full bg-slate-900 text-sm text-slate-200 rounded-full pl-9 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 border border-slate-700"
@@ -229,12 +229,12 @@ export default function Sidebar({ philosophers, groups, selectedId, onSelect, ch
                 className="w-full p-4 flex items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-slate-700 text-slate-400 hover:border-indigo-500 hover:text-indigo-400 hover:bg-indigo-500/5 transition-all group"
               >
                 <PlusCircle className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                <span className="font-bold text-sm tracking-widest uppercase">建立新群組</span>
+                <span className="font-bold text-sm tracking-widest uppercase">Create New Group</span>
               </button>
             ) : (
               <div className="p-4 rounded-2xl bg-slate-900/50 border border-slate-700 flex items-center gap-3 text-slate-500">
                 <AlertCircle className="w-5 h-5 shrink-0" />
-                <span className="text-xs font-medium">群組數量已達上限 (5/5)</span>
+                <span className="text-xs font-medium">Group limit reached (5/5)</span>
               </div>
             )}
 
@@ -264,7 +264,7 @@ export default function Sidebar({ philosophers, groups, selectedId, onSelect, ch
                       <p className="text-xs text-slate-400 truncate">
                         {chatHistory[group.id]?.length > 0 
                           ? chatHistory[group.id][chatHistory[group.id].length - 1].text 
-                          : `${group.memberIds.length} 位哲學家在此對話`}
+                          : `${group.memberIds.length} philosophers in this chat`}
                       </p>
                     </div>
                   </button>
@@ -275,7 +275,7 @@ export default function Sidebar({ philosophers, groups, selectedId, onSelect, ch
                   <div className="w-16 h-16 bg-slate-900 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-700">
                     <Users className="w-8 h-8" />
                   </div>
-                  <p className="text-slate-500 text-sm">尚未建立任何群組</p>
+                  <p className="text-slate-500 text-sm">No groups created yet</p>
                 </div>
               )}
             </div>

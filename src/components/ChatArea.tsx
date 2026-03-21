@@ -83,7 +83,7 @@ export default function ChatArea({
             <h2 className="font-semibold text-slate-100 break-words">{philosopher.name}</h2>
             <p className="text-[10px] text-slate-400 break-words" title={isGroupChat ? groupMembers.map(p => p.name).join(', ') : philosopher.shortDescription}>
               {isGroupChat 
-                ? `成員: ${groupMembers.map(p => p.name).join(', ')}` 
+                ? `Members: ${groupMembers.map(p => p.name).join(', ')}` 
                 : philosopher.shortDescription}
             </p>
           </div>
@@ -109,7 +109,7 @@ export default function ChatArea({
             </div>
             <p className="text-center max-w-md px-4">
               {isGroupChat 
-                ? `與 ${philosopher.name} 的成員們開始對話吧。`
+                ? `Start a conversation with the members of ${philosopher.name}.`
                 : `Start a philosophical dialogue with ${philosopher.name}. Ask a question, propose a theory, or challenge their views.`}
             </p>
           </div>
@@ -178,7 +178,7 @@ export default function ChatArea({
             >
               <div className="flex items-center gap-2">
                 <Users className="w-3 h-3" />
-                <span className="text-[10px] font-bold uppercase tracking-widest shrink-0">點名回覆 ({selectedGroupPhilosophers.length})</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest shrink-0">Mention to Reply ({selectedGroupPhilosophers.length})</span>
                 {selectedGroupPhilosophers.length > 0 && !isMentionListExpanded && (
                   <div className="flex items-center gap-1 ml-2 overflow-x-auto no-scrollbar max-w-[150px] sm:max-w-[300px]">
                     {selectedGroupPhilosophers.map(id => {
