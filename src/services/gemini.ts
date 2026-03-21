@@ -74,8 +74,8 @@ DO NOT include your name tag [${philosopher.name}]: in your output. Just start y
  * Also removes hallucinated UI system text.
  */
 export const sanitizeMessageText = (text: string): string => {
-  // 1. Strip speaker tags [Name]:
-  let clean = text.replace(/^(\s*\[[^\]]+\]:\s*)+/g, '').trim();
+  // 1. Strip speaker tags [Name]: or [Name]： using the requested robust regex
+  let clean = text.replace(/^\[.*?\][:：]?\s*/, '').trim();
   
   // 2. Strip hallucinated UI text like (Waiting for your reply...)
   clean = clean.replace(/\(Waiting for your (reply|input|response)\.\.\.\)/gi, '');
@@ -135,8 +135,8 @@ export const sendMessageToPhilosopherStream = async (
 
   const systemInstruction = getSystemInstruction(philosopher, isGroupChat, memberNames, previousPhilosopherName);
 
-  // 第一項修復：強化『停止詞 (Stop Sequences)』
-  const stopSequences = ["(Waiting", "Waiting for", "\n[", " ["];
+  // 第一項修復：放寬 『停止詞 (Stop Sequences)』，移除單獨的中括號攔截
+  const stopSequences = ["(Waiting", "Waiting for", "\nUser:", "User:", "\n[User]"];
   if (nextPhilosopherName) {
     stopSequences.push(`\n${nextPhilosopherName}:`);
     stopSequences.push(` [${nextPhilosopherName}]:`);
@@ -166,10 +166,15 @@ export const sendMessageToPhilosopherStream = async (
       throw new Error(data.error || 'Failed to call Netlify function');
     }
 
-    const reply = data.reply || '*[System Hint: This message cannot be displayed due to safety review or content filtering]*';
+    const reply = data.reply || '';
     
-    // Clean the reply from AI (it shouldn't have tags, but just in case)
+    // 第二項：Regex 強制修剪 (事後清洗)
     const cleanReply = sanitizeMessageText(reply);
+    
+    // 第三項：防止空字串崩潰 (Graceful Fallback)
+    if (cleanReply.length === 0) {
+      throw new Error('AI returned an empty response after sanitization');
+    }
     
     // Manually prepend the tag for UI and history consistency
     const taggedReply = isGroupChat ? `[${philosopher.name}]: ${cleanReply}` : cleanReply;
