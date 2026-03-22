@@ -112,8 +112,6 @@ export default function App() {
   const handleSendMessage = async (text: string) => {
     if (!text.trim() || isTyping) return;
 
-    const isGroupChat = selectedPhilosopherId.startsWith('group-');
-    
     let finalMessageText = text;
     if (replyingToMessage) {
       finalMessageText = `[Quoted Message]: "${replyingToMessage.text}"\n\n[My Reply]: ${text}`;
@@ -127,13 +125,40 @@ export default function App() {
       timestamp: new Date(),
     };
 
+    const updatedHistory = [...(chatHistory[selectedPhilosopherId] || []), userMessage];
+    
     setChatHistory(prev => ({
       ...prev,
-      [selectedPhilosopherId]: [...(prev[selectedPhilosopherId] || []), userMessage]
+      [selectedPhilosopherId]: updatedHistory
     }));
 
-    setIsTyping(true);
     setReplyingToMessage(null);
+    await processAIResponse(updatedHistory);
+  };
+
+  const handleEditMessage = async (messageId: string, newText: string) => {
+    if (isTyping) return;
+
+    const history = chatHistory[selectedPhilosopherId] || [];
+    const index = history.findIndex(m => m.id === messageId);
+    if (index === -1) return;
+
+    // 1. Update the message text
+    // 2. Truncate history after this message
+    const updatedUserMessage = { ...history[index], text: newText, timestamp: new Date() };
+    const truncatedHistory = [...history.slice(0, index), updatedUserMessage];
+
+    setChatHistory(prev => ({
+      ...prev,
+      [selectedPhilosopherId]: truncatedHistory
+    }));
+
+    await processAIResponse(truncatedHistory);
+  };
+
+  const processAIResponse = async (history: Message[]) => {
+    setIsTyping(true);
+    const isGroupChat = selectedPhilosopherId.startsWith('group-');
 
     if (isGroupChat && selectedGroup) {
       // 規則一：嚴格執行『強制同步列隊 (Synchronous Queue)』
@@ -145,7 +170,7 @@ export default function App() {
       }
 
       // 初始化歷史紀錄副本，確保 A 的發言能被 B 看見
-      let currentHistory = [...(chatHistory[selectedPhilosopherId] || []), userMessage];
+      let currentHistory = [...history];
 
       for (const philoId of speakerQueue) {
         const currentPhilosopher = philosophers.find(p => p.id === philoId);
@@ -253,8 +278,7 @@ export default function App() {
 
       let accumulatedText = '';
       try {
-        const historyToSend = [...currentMessages, userMessage];
-        await sendMessageToPhilosopherStream(selectedPhilosopher, historyToSend, (chunkText) => {
+        await sendMessageToPhilosopherStream(selectedPhilosopher, history, (chunkText) => {
           accumulatedText = chunkText;
           setChatHistory(prev => {
             const messages = prev[selectedPhilosopherId] || [];
@@ -307,6 +331,7 @@ export default function App() {
         isMobileChatOpen={isMobileChatOpen}
         replyingToMessage={replyingToMessage}
         onReply={setReplyingToMessage}
+        onEditMessage={handleEditMessage}
         selectedGroupPhilosophers={selectedGroupPhilosophers}
         onToggleGroupPhilosopher={(id) => {
           setSelectedGroupPhilosophers(prev => 
