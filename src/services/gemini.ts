@@ -53,6 +53,20 @@ export const sendMessageToPhilosopherStream = async (
     return `[${speakerTag}]: ${cleanText}`;
   }).join('\n\n');
 
+  // 判斷最後一句話是否為 User 發問
+  const isLastMessageUser = recentMessages.length > 0 && recentMessages[recentMessages.length - 1].sender.toLowerCase() === 'user';
+
+  // 核心突破：讓 JS 程式碼來擲骰子，決定這個哲學家這次的發言策略
+  // 設定 40% 機率獨立闡述，60% 機率觀點交鋒
+  const forceIndependent = Math.random() < 0.4; 
+  let strategyInstruction = "";
+
+  if (forceIndependent) {
+    strategyInstruction = "【強制行動：獨立闡述】你這次的發言「必須」完全無視歷史紀錄中的其他哲學家。直接面對 [User] 的議題發表你純粹的個人理念。";
+  } else {
+    strategyInstruction = "【強制行動：觀點交鋒】你這次的發言「必須」挑選歷史紀錄中「其中一位」哲學家，點名他並針對他的話進行反駁或延伸，藉此帶出你的核心觀點。最多只針對一個人。";
+  }
+
   // 第一步：定義基礎人格與字數指令 (套用於單人與群組)
   const basePrompt = `
 你現在是歷史上偉大的哲學家：${philosopher.name}。
@@ -67,17 +81,12 @@ export const sendMessageToPhilosopherStream = async (
 
   // 第二步：定義群組專屬的有機互動指令 (只套用於群組)
   const groupPrompt = isGroupChat ? `
-【公開沙龍有機互動法則】
-請閱讀以下目前的群組對話紀錄：
+【公開沙龍互動法則】
+歷史對話紀錄：
 ${flatContext}
 
-你現在身處一場多人沙龍，[User] 是拋出議題的人。請遵循以下「有機平衡」的發言策略：
-1. 議題核心：你的首要任務是針對 [User] 提出的「主題」給出你的哲學見解。
-2. 發言策略的動態平衡：為了保持沙龍最真實的氛圍，你可以自由選擇以下「其中一種」發言對象。請依照你當下的性格與對話脈絡判斷，兩者的使用時機應該是均等的：
-   - 【策略 A：獨立闡述】：完全無視其他哲學家的發言，直接針對 [User] 的議題發表你純粹的個人理念。
-   - 【策略 B：觀點交鋒】：挑選歷史紀錄中「其中一位」讓你認同或不認同的哲學家，點名他並針對他的話進行反駁或延伸，藉此帶出你的核心觀點。
-3. 嚴禁排隊點名：絕對不要在發言中逐一盤點或回應前面「所有人」的觀點。如果選擇交鋒，最多只針對「一個人」。
-4. 順其自然：你沒有義務一定要回應別人，也沒有義務一定要假裝沒聽到別人的話。請展現出最真實的哲學大師風範。
+1. ${strategyInstruction}
+2. 【User 絕對優先】：無論你採取上述哪種行動，若 [User] 在最新訊息中提出了明確的問題，你的發言內容「必須」給出對該問題的實質回答！嚴禁只顧著與其他哲學家吵架而偏題。
 ` : `
 【當前對話歷史】
 ${flatContext}
