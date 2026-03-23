@@ -187,10 +187,11 @@ export default function App() {
           const groupMembers = philosophers.filter(p => selectedGroup.memberIds.includes(p.id));
           const userText = history[history.length - 1].text;
           const routedName = await routeGroupMessage(userText, groupMembers);
+          console.log('🤖 Router Agent 判定目標:', routedName);
           
           const matchedPhilosopher = groupMembers.find(p => 
-            p.name.toLowerCase() === routedName.toLowerCase() || 
-            routedName.toLowerCase().includes(p.name.toLowerCase())
+            p.id.toLowerCase() === routedName.toLowerCase() || 
+            p.name.toLowerCase() === routedName.toLowerCase()
           );
 
           if (matchedPhilosopher) {

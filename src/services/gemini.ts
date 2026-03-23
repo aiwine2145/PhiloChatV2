@@ -26,13 +26,13 @@ export const routeGroupMessage = async (
   userText: string,
   activePhilosophers: Philosopher[]
 ): Promise<string> => {
-  const philosopherNames = activePhilosophers.map(p => p.name).join(', ');
+  const philosophersList = activePhilosophers.map(p => ({ name: p.name, id: p.id }));
   
   try {
     const response = await fetch('/.netlify/functions/router', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userText, philosopherNames }),
+      body: JSON.stringify({ userText, philosophersList }),
     });
 
     if (!response.ok) {
