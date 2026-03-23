@@ -109,6 +109,23 @@ export default function App() {
     setIsMobileChatOpen(true);
   };
 
+  const handleDeleteGroup = (groupId: string) => {
+    if (window.confirm('確定要刪除此群組與所有對話紀錄嗎？')) {
+      setGroups(prev => prev.filter(g => g.id !== groupId));
+      setChatHistory(prev => {
+        const newHistory = { ...prev };
+        delete newHistory[groupId];
+        return newHistory;
+      });
+      
+      // 當前視窗防護：若刪除的是目前選中的群組，重置為預設哲學家
+      if (selectedPhilosopherId === groupId) {
+        setSelectedPhilosopherId(philosophers[0].id);
+        setIsMobileChatOpen(false);
+      }
+    }
+  };
+
   const handleSendMessage = async (text: string) => {
     if (!text.trim() || isTyping) return;
 
@@ -317,6 +334,7 @@ export default function App() {
         groups={groups}
         selectedId={selectedPhilosopherId} 
         onSelect={handleSelectPhilosopher}
+        onDeleteGroup={handleDeleteGroup}
         chatHistory={chatHistory}
         isMobileChatOpen={isMobileChatOpen}
         onCreateGroupClick={() => setIsCreateModalOpen(true)}

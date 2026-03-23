@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Philosopher } from '../data/philosophers';
 import { Message, Group } from '../types';
-import { Send, MessageSquarePlus, ChevronLeft, Reply, X, Users, ChevronUp, ChevronDown, Edit2, Check, CornerDownLeft } from 'lucide-react';
+import { Send, MessageSquarePlus, ChevronLeft, Reply, X, Users, Edit2, Check } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { sanitizeMessageText } from '../services/gemini';
 
@@ -41,7 +41,6 @@ export default function ChatArea({
   const [inputText, setInputText] = useState('');
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editInputText, setEditInputText] = useState('');
-  const [isMentionListExpanded, setIsMentionListExpanded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const editTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -238,53 +237,33 @@ export default function ChatArea({
       <div className="bg-slate-800 border-t border-slate-700 shrink-0">
         {isGroupChat && (
           <div className="bg-slate-900/30 border-b border-slate-700">
-            <button 
-              type="button"
-              onClick={() => setIsMentionListExpanded(!isMentionListExpanded)}
-              className="w-full px-4 py-2 flex items-center justify-between text-slate-400 hover:bg-slate-800/50 transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <Users className="w-3 h-3" />
-                <span className="text-[10px] font-bold uppercase tracking-widest shrink-0">Mention to Reply ({selectedGroupPhilosophers.length})</span>
-                {selectedGroupPhilosophers.length > 0 && !isMentionListExpanded && (
-                  <div className="flex items-center gap-1 ml-2 overflow-x-auto no-scrollbar max-w-[150px] sm:max-w-[300px]">
-                    {selectedGroupPhilosophers.map(id => {
-                      const p = groupMembers.find(m => m.id === id);
-                      return p ? (
-                        <span key={id} className="text-[9px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded-sm whitespace-nowrap shrink-0">
-                          {p.name}
-                        </span>
-                      ) : null;
-                    })}
-                  </div>
-                )}
+            <div className="px-4 py-2 flex items-center gap-3">
+              <div className="flex items-center gap-2 shrink-0">
+                <Users className="w-3 h-3 text-slate-500" />
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Mention:</span>
               </div>
-              {isMentionListExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
-            </button>
-            
-            {isMentionListExpanded && (
-              <div className="px-4 py-3 border-t border-slate-700/50 animate-in slide-in-from-bottom-2 duration-200">
-                <div className="flex flex-wrap gap-2">
+              <div className="flex-1 overflow-x-auto no-scrollbar">
+                <div className="flex items-center gap-2 py-1">
                   {groupMembers.map(p => (
                     <button
                       key={p.id}
                       type="button"
                       onClick={() => onToggleGroupPhilosopher?.(p.id)}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all ${
+                      className={`flex items-center gap-2 px-3 py-1 rounded-full border transition-all whitespace-nowrap shrink-0 ${
                         selectedGroupPhilosophers.includes(p.id)
-                          ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300 shadow-[0_0_10px_rgba(99,102,241,0.2)]'
-                          : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'
+                          ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300 shadow-[0_0_10px_rgba(99,102,241,0.1)]'
+                          : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:border-slate-500'
                       }`}
                     >
-                      <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${p.bg} ${p.color}`}>
-                        <p.icon className="w-3 h-3" />
+                      <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] ${p.bg} ${p.color}`}>
+                        <p.icon className="w-2.5 h-2.5" />
                       </div>
-                      <span className="text-xs font-medium">{p.name}</span>
+                      <span className="text-[11px] font-medium">{p.name}</span>
                     </button>
                   ))}
                 </div>
               </div>
-            )}
+            </div>
           </div>
         )}
         {replyingToMessage && (
