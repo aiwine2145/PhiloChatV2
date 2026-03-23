@@ -1,7 +1,10 @@
 import { Philosopher, philosophers } from '../data/philosophers';
 import { Message } from '../types';
+import { GoogleGenAI } from "@google/genai";
 
 const MAX_HISTORY_LENGTH = 20;
+
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
 /**
  * Strips all speaker tags from the beginning of a message.
@@ -16,6 +19,42 @@ export const sanitizeMessageText = (text: string): string => {
   clean = clean.replace(/\(Waiting\.\.\.\)/gi, '');
   
   return clean.trim();
+};
+
+/**
+ * Router Agent (意圖判定)
+ * Identifies the target addressee in the user's message.
+ */
+export const routeGroupMessage = async (
+  userText: string,
+  activePhilosophers: Philosopher[]
+): Promise<string> => {
+  const philosopherNames = activePhilosophers.map(p => p.name).join(', ');
+  
+  const prompt = `Task: Identify the target addressee in the user's message.
+Context: The active philosophers in this chat are: [${philosopherNames}].
+User Message: "${userText}"
+
+Instructions:
+1. Read the user message and determine if they are directly addressing or asking a question to a specific philosopher from the list.
+2. Pay attention to semantic intent (e.g., "Socrates said X, Plato what do you think?" -> the target is Plato).
+3. You MUST output ONLY the exact name of the target philosopher.
+4. If no specific philosopher is being addressed, or the name is not in the list, you MUST output exactly "NONE".
+Do not add any conversational text, markdown, or punctuation.`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+      config: {
+        temperature: 0,
+      }
+    });
+    return response.text?.trim() || "NONE";
+  } catch (error) {
+    console.error("Router Agent Error:", error);
+    return "NONE";
+  }
 };
 
 export const sendMessageToPhilosopherStream = async (
@@ -96,51 +135,25 @@ ${flatContext}
   // 第三步：組合最終 Payload (確保最高執行指令或任務在最尾端)
   const safePrompt = basePrompt + '\n\n' + promptWithContext;
 
-  // 將所有上下文包裝成唯一一個 user 角色的 contents
-  const contents = [{
-    role: "user",
-    parts: [{ text: safePrompt }]
-  }];
-
   try {
-    const response = await fetch('/.netlify/functions/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        philosopher,
-        contents,
-        isGroupChat
-      }),
+    const response = await ai.models.generateContentStream({
+      model: "gemini-3-flash-preview",
+      contents: safePrompt,
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      // Handle 429 specifically if returned from function
-      if (response.status === 429) {
-        onChunk(data.reply || '[System Hint: API requests are too frequent, the philosopher is deep in thought...]');
-        return;
+    let fullText = '';
+    for await (const chunk of response) {
+      const chunkText = chunk.text;
+      if (chunkText) {
+        fullText += chunkText;
+        // 第二項：Regex 強制修剪 (串流中清洗)
+        const cleanReply = sanitizeMessageText(fullText);
+        const taggedReply = isGroupChat ? `[${philosopher.name}]: ${cleanReply}` : cleanReply;
+        onChunk(taggedReply);
       }
-      throw new Error(data.error || 'Failed to call Netlify function');
     }
-
-    const reply = data.reply || '';
-    
-    // 第二項：Regex 強制修剪 (事後清洗)
-    const cleanReply = sanitizeMessageText(reply);
-    
-    // 第三項：防止空字串崩潰 (Graceful Fallback)
-    if (cleanReply.length === 0) {
-      throw new Error('AI returned an empty response after sanitization');
-    }
-    
-    // Manually prepend the tag for UI and history consistency
-    const taggedReply = isGroupChat ? `[${philosopher.name}]: ${cleanReply}` : cleanReply;
-    
-    onChunk(taggedReply);
   } catch (error: any) {
-    console.error('Netlify Function Call Error:', error);
-    // If it's a rate limit error that wasn't caught by status code (unlikely but safe)
+    console.error('Gemini API Error:', error);
     if (error.message?.includes('429') || error.message?.toLowerCase().includes('rate limit')) {
       onChunk('[System Hint: API requests are too frequent, the philosopher is deep in thought...]');
     } else {

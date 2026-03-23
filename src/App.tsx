@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { philosophers } from './data/philosophers';
 import { Message, ChatHistory, Group } from './types';
-import { sendMessageToPhilosopherStream } from './services/gemini';
+import { sendMessageToPhilosopherStream, routeGroupMessage } from './services/gemini';
 import Sidebar from './components/Sidebar';
 import ChatArea from './components/ChatArea';
 import CreateGroupModal from './components/CreateGroupModal';
@@ -182,8 +182,29 @@ export default function App() {
       let speakerQueue = [...selectedGroupPhilosophers];
       
       if (speakerQueue.length === 0) {
-        const randomId = selectedGroup.memberIds[Math.floor(Math.random() * selectedGroup.memberIds.length)];
-        speakerQueue = [randomId];
+        // 第一階段：Router Agent (意圖判定)
+        try {
+          const groupMembers = philosophers.filter(p => selectedGroup.memberIds.includes(p.id));
+          const userText = history[history.length - 1].text;
+          const routedName = await routeGroupMessage(userText, groupMembers);
+          
+          const matchedPhilosopher = groupMembers.find(p => 
+            p.name.toLowerCase() === routedName.toLowerCase() || 
+            routedName.toLowerCase().includes(p.name.toLowerCase())
+          );
+
+          if (matchedPhilosopher) {
+            speakerQueue = [matchedPhilosopher.id];
+          } else {
+            // NONE 或無法匹配，回退到隨機挑選 (40% 獨立 / 60% 交鋒邏輯在 sendMessageToPhilosopherStream 內處理)
+            const randomId = selectedGroup.memberIds[Math.floor(Math.random() * selectedGroup.memberIds.length)];
+            speakerQueue = [randomId];
+          }
+        } catch (error) {
+          console.error("Router pass failed, falling back to random:", error);
+          const randomId = selectedGroup.memberIds[Math.floor(Math.random() * selectedGroup.memberIds.length)];
+          speakerQueue = [randomId];
+        }
       }
 
       // 初始化歷史紀錄副本，確保 A 的發言能被 B 看見
