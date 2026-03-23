@@ -31,6 +31,7 @@
   /* Global Mobile Fixes */
   html, body, #root {
     overflow-x: hidden;
+    width: 100vw;
     max-width: 100%;
     position: relative;
     box-sizing: border-box;

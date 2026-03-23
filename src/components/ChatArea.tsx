@@ -100,7 +100,7 @@ export default function ChatArea({
   };
 
   return (
-    <div className={`flex-1 flex-col bg-slate-900 h-full relative ${isMobileChatOpen ? 'flex' : 'hidden md:flex'}`}>
+    <div className={`flex-1 flex-col bg-slate-900 h-full relative max-w-full overflow-hidden ${isMobileChatOpen ? 'flex' : 'hidden md:flex'}`}>
       {/* Header */}
       <div className="h-16 border-b border-slate-700 bg-slate-800/95 backdrop-blur flex items-center justify-between px-4 shrink-0 z-10">
         <div className="flex items-center gap-2 overflow-hidden">
@@ -234,34 +234,32 @@ export default function ChatArea({
       </div>
 
       {/* Input Area */}
-      <div className="bg-slate-800 border-t border-slate-700 shrink-0">
+      <div className="bg-slate-800 border-t border-slate-700 shrink-0 w-full max-w-full overflow-hidden">
         {isGroupChat && (
-          <div className="bg-slate-900/30 border-b border-slate-700">
-            <div className="px-4 py-2 flex items-center gap-3">
-              <div className="flex items-center gap-2 shrink-0">
-                <Users className="w-3 h-3 text-slate-500" />
-                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Mention:</span>
-              </div>
-              <div className="flex-1 overflow-x-auto no-scrollbar">
-                <div className="flex items-center gap-2 py-1">
-                  {groupMembers.map(p => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => onToggleGroupPhilosopher?.(p.id)}
-                      className={`flex items-center gap-2 px-3 py-1 rounded-full border transition-all whitespace-nowrap shrink-0 ${
-                        selectedGroupPhilosophers.includes(p.id)
-                          ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300 shadow-[0_0_10px_rgba(99,102,241,0.1)]'
-                          : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:border-slate-500'
-                      }`}
-                    >
-                      <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] ${p.bg} ${p.color}`}>
-                        <p.icon className="w-2.5 h-2.5" />
-                      </div>
-                      <span className="text-[11px] font-medium">{p.name}</span>
-                    </button>
-                  ))}
-                </div>
+          <div className="bg-slate-900/30 border-b border-slate-700 flex items-center w-full max-w-full overflow-hidden">
+            <div className="pl-4 pr-2 py-2 flex items-center gap-2 shrink-0 border-r border-slate-700/30">
+              <Users className="w-3 h-3 text-slate-500" />
+              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Mention:</span>
+            </div>
+            <div className="flex-1 min-w-0 overflow-x-auto no-scrollbar">
+              <div className="flex items-center gap-2 px-4 py-2 whitespace-nowrap">
+                {groupMembers.map(p => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => onToggleGroupPhilosopher?.(p.id)}
+                    className={`flex items-center gap-2 px-3 py-1 rounded-full border transition-all whitespace-nowrap shrink-0 ${
+                      selectedGroupPhilosophers.includes(p.id)
+                        ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300 shadow-[0_0_10px_rgba(99,102,241,0.1)]'
+                        : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:border-slate-500'
+                    }`}
+                  >
+                    <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] ${p.bg} ${p.color}`}>
+                      <p.icon className="w-2.5 h-2.5" />
+                    </div>
+                    <span className="text-[11px] font-medium">{p.name}</span>
+                  </button>
+                ))}
               </div>
             </div>
           </div>
