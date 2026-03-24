@@ -1,25 +1,28 @@
 import { GoogleGenAI } from '@google/genai';
+import type { Config, Context } from "@netlify/functions";
 
-export const handler = async (event) => {
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' };
+export default async (req: Request, context: Context) => {
+  // Only allow POST
+  if (req.method !== 'POST') {
+    return new Response('Method Not Allowed', { status: 405 });
   }
 
   try {
-    const { userText, philosophersList } = JSON.parse(event.body);
+    const { userText, philosophersList } = await req.json();
 
-    if (!process.env.GEMINI_API_KEY) {
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ error: 'GEMINI_API_KEY is not configured on the server.' }),
-      };
+    const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+    if (!apiKey) {
+      return new Response(JSON.stringify({ error: 'API Key is not configured on the server.' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    const ai = new GoogleGenAI({ apiKey });
     
     // Format the list for the prompt
-    const listForPrompt = philosophersList.map(p => `${p.name} (ID: ${p.id})`).join(', ');
-    const idList = philosophersList.map(p => p.id).join(', ');
+    const listForPrompt = philosophersList.map((p: any) => `${p.name} (ID: ${p.id})`).join(', ');
+    const idList = philosophersList.map((p: any) => p.id).join(', ');
 
     const prompt = `Task: Identify the target addressee in the user's message.
 Context: The active philosophers in this chat are: [${listForPrompt}].
@@ -48,17 +51,20 @@ Allowed Output List: [${idList}, NONE]`;
     // Cleanup: Remove non-alphabetic characters and trim
     const cleanedText = text.replace(/[^a-zA-Z]/g, '').trim();
 
-    return {
-      statusCode: 200,
+    return new Response(JSON.stringify({ routedName: cleanedText }), {
+      status: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ routedName: cleanedText }),
-    };
-  } catch (error) {
+    });
+
+  } catch (error: any) {
     console.error("Router Function Error:", error);
-    return {
-      statusCode: 500,
+    return new Response(JSON.stringify({ error: 'Failed to route message', details: error.message }), {
+      status: 500,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Failed to route message', details: error.message }),
-    };
+    });
   }
+};
+
+export const config: Config = {
+  path: "/.netlify/functions/router"
 };

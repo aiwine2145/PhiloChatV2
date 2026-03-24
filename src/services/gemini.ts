@@ -130,7 +130,7 @@ ${flatContext}
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         philosopher: philosopher.name,
-        contents: safePrompt, // 注意：chat.js 預期 contents 是字串或陣列，這裡傳字串
+        contents: safePrompt,
         isGroupChat 
       }),
     });
@@ -140,13 +140,38 @@ ${flatContext}
       throw new Error(errorData.error || 'Chat function failed');
     }
 
-    const data = await response.json();
-    const reply = data.reply;
+    // Handle streaming response (Server-Sent Events)
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error('No reader available');
+
+    const decoder = new TextDecoder();
+    let fullText = '';
     
-    // 模擬串流效果 (一次性輸出)
-    const cleanReply = sanitizeMessageText(reply);
-    const taggedReply = isGroupChat ? `[${philosopher.name}]: ${cleanReply}` : cleanReply;
-    onChunk(taggedReply);
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value);
+      const lines = chunk.split('\n');
+      
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          try {
+            const data = JSON.parse(line.slice(6));
+            if (data.text) {
+              fullText += data.text;
+              const cleanReply = sanitizeMessageText(fullText);
+              const taggedReply = isGroupChat ? `[${philosopher.name}]: ${cleanReply}` : cleanReply;
+              onChunk(taggedReply);
+            } else if (data.error) {
+              throw new Error(data.error);
+            }
+          } catch (e) {
+            // Ignore parse errors for incomplete lines
+          }
+        }
+      }
+    }
 
   } catch (error: any) {
     console.error('Gemini API Error (via Proxy):', error);
