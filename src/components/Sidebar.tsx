@@ -22,6 +22,8 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
+import PhilosopherAvatar from './PhilosopherAvatar';
+
 interface GroupItemProps {
   group: Group;
   selectedId: string;
@@ -143,9 +145,7 @@ function SortableItem({ philosopher, selectedId, onSelect, lastMessage }: Sortab
         onClick={() => onSelect(philosopher.id)}
         className="flex-1 p-3 pl-1 flex items-center gap-3 text-left"
       >
-        <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 border border-slate-600 ${philosopher.bg} ${philosopher.color}`}>
-          <philosopher.icon className="w-6 h-6" />
-        </div>
+        <PhilosopherAvatar philosopher={philosopher} size="lg" />
         <div className="flex-1 min-w-0">
           <div className="flex justify-between items-baseline mb-1">
             <h3 className="font-medium text-slate-200 truncate">{philosopher.name}</h3>

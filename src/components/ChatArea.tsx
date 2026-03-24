@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Philosopher } from '../data/philosophers';
 import { Message, Group } from '../types';
-import { Send, MessageSquarePlus, ChevronLeft, Reply, X, Users, Edit2, Check } from 'lucide-react';
+import { Send, MessageSquarePlus, ChevronLeft, Reply, X, Users, Edit2, Check, User } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { sanitizeMessageText } from '../services/gemini';
+import PhilosopherAvatar from './PhilosopherAvatar';
 
 interface ChatAreaProps {
   philosopher: Philosopher;
@@ -107,9 +108,13 @@ export default function ChatArea({
           <button onClick={onBack} className="md:hidden p-2 -ml-2 text-slate-400 hover:text-slate-200 rounded-full">
             <ChevronLeft className="w-6 h-6" />
           </button>
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 border border-slate-600 ${philosopher.bg} ${philosopher.color}`}>
-            {isGroupChat ? <Users className="w-5 h-5" /> : <philosopher.icon className="w-5 h-5" />}
-          </div>
+          {isGroupChat ? (
+            <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 border border-slate-600 bg-slate-700 text-indigo-400">
+              <Users className="w-5 h-5" />
+            </div>
+          ) : (
+            <PhilosopherAvatar philosopher={philosopher} size="md" />
+          )}
           <div className="min-w-0 flex-1">
             <h2 className="font-semibold text-slate-100 break-words">{philosopher.name}</h2>
             <p className="text-[10px] text-slate-400 break-words" title={isGroupChat ? groupMembers.map(p => p.name).join(', ') : philosopher.shortDescription}>
@@ -135,9 +140,13 @@ export default function ChatArea({
       <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 scroll-smooth custom-scrollbar">
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-slate-500 space-y-4">
-            <div className={`w-24 h-24 rounded-full flex items-center justify-center border border-slate-600 opacity-50 grayscale ${philosopher.bg} ${philosopher.color}`}>
-              {isGroupChat ? <Users className="w-12 h-12" /> : <philosopher.icon className="w-12 h-12" />}
-            </div>
+            {isGroupChat ? (
+              <div className="w-24 h-24 rounded-full flex items-center justify-center border border-slate-600 opacity-50 grayscale bg-slate-700 text-indigo-400">
+                <Users className="w-12 h-12" />
+              </div>
+            ) : (
+              <PhilosopherAvatar philosopher={philosopher} size="xl" className="opacity-50 grayscale" />
+            )}
             <p className="text-center max-w-md px-4">
               {isGroupChat 
                 ? `Start a conversation with the members of ${philosopher.name}.`
@@ -147,21 +156,35 @@ export default function ChatArea({
         ) : (
           messages
             .filter(msg => msg.text.trim().length > 0 || msg.isStreaming)
-            .map((msg) => (
-            <div 
-              key={msg.id} 
-              className={`flex group ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div className={`flex items-center gap-2 max-w-[90%] sm:max-w-[85%] ${msg.sender === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+            .map((msg) => {
+              const msgPhilosopher = msg.sender === 'philosopher' 
+                ? (allPhilosophers.find(p => p.id === msg.philosopherId) || philosopher)
+                : null;
+
+              return (
                 <div 
-                  className={`rounded-2xl px-4 sm:px-5 py-2.5 sm:py-3 shadow-sm ${
-                    msg.sender === 'user' 
-                      ? 'bg-indigo-600 text-white rounded-br-sm' 
-                      : msg.isError
-                        ? 'bg-red-900/50 text-red-200 rounded-bl-sm border border-red-800'
-                        : 'bg-slate-800 text-slate-200 rounded-bl-sm border border-slate-700'
-                  }`}
+                  key={msg.id} 
+                  className={`flex group ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
+                  <div className={`flex items-end gap-2 max-w-[90%] sm:max-w-[85%] ${msg.sender === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+                    <div className="shrink-0 mb-1">
+                      {msg.sender === 'user' ? (
+                        <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white border border-indigo-400">
+                          <User className="w-4 h-4" />
+                        </div>
+                      ) : msgPhilosopher ? (
+                        <PhilosopherAvatar philosopher={msgPhilosopher} size="sm" />
+                      ) : null}
+                    </div>
+                    <div 
+                      className={`rounded-2xl px-4 sm:px-5 py-2.5 sm:py-3 shadow-sm ${
+                        msg.sender === 'user' 
+                          ? 'bg-indigo-600 text-white rounded-br-sm' 
+                          : msg.isError
+                            ? 'bg-red-900/50 text-red-200 rounded-bl-sm border border-red-800'
+                            : 'bg-slate-800 text-slate-200 rounded-bl-sm border border-slate-700'
+                      }`}
+                    >
                   {isGroupChat && msg.senderName && (
                     <div className={`text-[10px] font-bold mb-1 uppercase tracking-wider ${msg.sender === 'user' ? 'text-indigo-200' : 'text-indigo-400'}`}>
                       {msg.senderName}
@@ -228,8 +251,9 @@ export default function ChatArea({
                 </div>
               </div>
             </div>
-          ))
-        )}
+          );
+        })
+    )}
         <div ref={messagesEndRef} />
       </div>
 
@@ -254,9 +278,7 @@ export default function ChatArea({
                         : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:border-slate-500'
                     }`}
                   >
-                    <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] ${p.bg} ${p.color}`}>
-                      <p.icon className="w-2.5 h-2.5" />
-                    </div>
+                    <PhilosopherAvatar philosopher={p} size="xs" />
                     <span className="text-[11px] font-medium">{p.name}</span>
                   </button>
                 ))}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Philosopher } from '../data/philosophers';
 import { X, Check, Users } from 'lucide-react';
+import PhilosopherAvatar from './PhilosopherAvatar';
 
 interface CreateGroupModalProps {
   philosophers: Philosopher[];
@@ -72,9 +73,7 @@ export default function CreateGroupModal({ philosophers, onClose, onCreate }: Cr
                       : 'bg-slate-900/50 border-slate-700 text-slate-400 hover:border-slate-600'
                   }`}
                 >
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${p.bg} ${p.color}`}>
-                    <p.icon className="w-4 h-4" />
-                  </div>
+                  <PhilosopherAvatar philosopher={p} size="sm" />
                   <span className="flex-1 font-medium truncate">{p.name}</span>
                   {selectedMembers.includes(p.id) && (
                     <div className="w-5 h-5 rounded-full bg-indigo-500 flex items-center justify-center">
