@@ -8,7 +8,23 @@ export default async (req: Request, context: Context) => {
   }
 
   try {
-    const { philosopher, contents, isGroupChat } = await req.json();
+    let { philosopher, contents, isGroupChat } = await req.json();
+
+    // 強制語言鏡像鐵律 (Language Mirroring Rule)
+    const languageMirroringRule = `
+CRITICAL LANGUAGE INSTRUCTION: You MUST auto-detect the exact language of the user's latest message and reply ONLY in that exact language. If the user writes in English, reply ENTIRELY in English. If the user writes in Traditional Chinese, reply ENTIRELY in Traditional Chinese. NEVER mix languages.
+`;
+
+    // Append the rule to the contents to ensure it's at the end of the prompt
+    if (typeof contents === 'string') {
+      contents = contents + '\n\n' + languageMirroringRule;
+    } else if (Array.isArray(contents)) {
+      // If contents is an array of parts, append a text part
+      contents.push({ text: languageMirroringRule });
+    } else if (contents && typeof contents === 'object' && contents.parts) {
+      // If contents is a content object
+      contents.parts.push({ text: languageMirroringRule });
+    }
 
     // Support both GEMINI_API_KEY and API_KEY
     const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;

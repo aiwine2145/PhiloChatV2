@@ -122,15 +122,7 @@ ${flatContext}
 請根據上述對話紀錄，發表你的哲學觀點。請直接輸出你的回覆，絕對不要在開頭加上括號或你的名字。
 `;
 
-  const languageMirroringRule = `
-CRITICAL INSTRUCTION REGARDING LANGUAGE: 
-You MUST explicitly detect the language of the user's latest input message and reply in the EXACT SAME LANGUAGE. 
-- If the user asks in English, your entire response MUST be in English. 
-- If the user asks in Traditional Chinese, your entire response MUST be in Traditional Chinese.
-Do NOT mix languages. This rule overrides any other language preferences.
-`;
-
-  const safePrompt = basePrompt + '\n\n' + promptWithContext + '\n\n' + languageMirroringRule;
+  const safePrompt = basePrompt + '\n\n' + promptWithContext;
 
   try {
     const response = await fetch('/.netlify/functions/chat', {
