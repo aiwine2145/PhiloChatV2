@@ -10,20 +10,24 @@ export default async (req: Request, context: Context) => {
   try {
     let { philosopher, contents, isGroupChat } = await req.json();
 
-    // 強制語言鏡像鐵律 (Language Mirroring Rule)
-    const languageMirroringRule = `
-CRITICAL LANGUAGE INSTRUCTION: You MUST auto-detect the exact language of the user's latest message and reply ONLY in that exact language. If the user writes in English, reply ENTIRELY in English. If the user writes in Traditional Chinese, reply ENTIRELY in Traditional Chinese. NEVER mix languages.
+    // 強制語系、節奏與人格鐵律 (Telegram-Style & Hardcore Persona)
+    const personaRules = `
+CRITICAL CONVERSATIONAL PACING, LANGUAGE & PERSONA RULES:
+1. Strict Language Match: Auto-detect the exact language of the user's latest message and reply ONLY in that exact language. NEVER mix languages.
+2. Telegram-Style Messaging: Act as if you are chatting on a modern messaging app. Match the user's message length and energy.
+3. Intent Recognition & Hardcore Persona (Crucial):
+   - Casual Chit-chat / Short Inputs: If the user sends a greeting, a simple emotion ("I'm hungry", "I'm angry"), or a casual statement without a deep question, DO NOT overthink or write a lecture. Respond IMMEDIATELY and VERY BRIEFLY (1-3 short sentences max). 
+   - NEVER break character to be generically "polite" or "empathetic" if it contradicts your persona. If your persona is arrogant, cynical, or intense (e.g., Nietzsche), react to their mundane statement with your unique, unfiltered philosophical attitude. End with a sharp, persona-accurate question or provocation to challenge them.
+   - Deep Inquiries: ONLY when the user explicitly asks a philosophical question should you provide a longer, profound response.
 `;
 
     // Append the rule to the contents to ensure it's at the end of the prompt
     if (typeof contents === 'string') {
-      contents = contents + '\n\n' + languageMirroringRule;
+      contents = contents + '\n\n' + personaRules;
     } else if (Array.isArray(contents)) {
-      // If contents is an array of parts, append a text part
-      contents.push({ text: languageMirroringRule });
+      contents.push({ text: personaRules });
     } else if (contents && typeof contents === 'object' && contents.parts) {
-      // If contents is a content object
-      contents.parts.push({ text: languageMirroringRule });
+      contents.parts.push({ text: personaRules });
     }
 
     // Support both GEMINI_API_KEY and API_KEY
