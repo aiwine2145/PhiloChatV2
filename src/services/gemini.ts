@@ -90,9 +90,9 @@ export const sendMessageToPhilosopherStream = async (
   let strategyInstruction = "";
 
   if (forceIndependent) {
-    strategyInstruction = "【強制行動：獨立闡述】完全無視其他哲學家。直接對 [User] 的議題發表你純粹的個人理念。（字數嚴格限制：請保持在 3 到 5 句話內，精簡有力）";
+    strategyInstruction = "【強制行動：獨立闡述】直接對 [User] 的議題發表你純粹的個人理念。請保持精簡，避免冗長。";
   } else {
-    strategyInstruction = "【強制行動：先回 User，再戰同儕】你「必須」先正面且自然地回答 [User] 的問題。在闡述完你的核心觀點後，再挑選歷史紀錄中「其中一位已發言」的哲學家的觀點進行反駁或延伸，藉由打擊對手來強化你的論述。最多只針對一個人。**嚴禁對著空氣喊話或召喚不在歷史紀錄中的人物（例如你的歷史宿敵）。若歷史紀錄中除了 User 外，尚無其他哲學家發言，請自動轉為【獨立闡述】。**（字數彈性限制：為了兼顧兩者，允許擴展至 4 到 7 句精要論述）";
+    strategyInstruction = "【強制行動：先回 User，再戰同儕】先正面回答 [User] 的問題，再挑選歷史紀錄中「其中一位已發言」的哲學家進行反駁或延伸。請保持對話節奏，避免長篇大論。若尚無其他哲學家發言，請轉為【獨立闡述】。";
   }
 
   const basePrompt = `

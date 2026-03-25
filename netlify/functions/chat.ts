@@ -21,13 +21,25 @@ CRITICAL CONVERSATIONAL PACING, LANGUAGE & PERSONA RULES:
    - Deep Inquiries: ONLY when the user explicitly asks a philosophical question should you provide a longer, profound response.
 `;
 
+    const groupChatRules = `
+GROUP CHAT DYNAMICS: 
+You are in a group chat room with other philosophers and the user. 
+- If the user sends a simple casual greeting to the group (e.g., "Hi everyone", "Hello"), DO NOT give a long opening statement. Each philosopher responding must give ONLY ONE sharp, in-character sentence. (e.g., Machiavelli might just say: "Greetings. Let's see who holds the power in this room.")
+- Do not act like you are giving a speech at a conference. Keep the banter fast, reactive, and brief, just like a real group chat on Telegram.
+`;
+
+    let finalRules = personaRules;
+    if (isGroupChat) {
+      finalRules += '\n\n' + groupChatRules;
+    }
+
     // Append the rule to the contents to ensure it's at the end of the prompt
     if (typeof contents === 'string') {
-      contents = contents + '\n\n' + personaRules;
+      contents = contents + '\n\n' + finalRules;
     } else if (Array.isArray(contents)) {
-      contents.push({ text: personaRules });
+      contents.push({ text: finalRules });
     } else if (contents && typeof contents === 'object' && contents.parts) {
-      contents.parts.push({ text: personaRules });
+      contents.parts.push({ text: finalRules });
     }
 
     // Support both GEMINI_API_KEY and API_KEY
